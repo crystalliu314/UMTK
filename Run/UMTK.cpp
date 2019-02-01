@@ -42,12 +42,12 @@ void UMTK::set_gain(byte gain) {
 	read();
 }
 
-uint8_t shiftMeow(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder)
+unsigned long shiftMeow(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder)
 {
-  uint8_t value = 0;
+  unsigned long value = 0;
   uint8_t i;
 
-  for (i = 0; i < 8; ++i)
+  for (i = 0; i < 32; ++i)
         {
     digitalWrite(clockPin, HIGH);
     delayMicroseconds(10);
@@ -55,7 +55,7 @@ uint8_t shiftMeow(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder)
     if (bitOrder == LSBFIRST)
       value |= digitalRead(dataPin) << i;
     else
-      value |= digitalRead(dataPin) << (7 - i);
+      value |= digitalRead(dataPin) << (31 - i);
     
     delayMicroseconds(50);
   }
@@ -64,22 +64,10 @@ uint8_t shiftMeow(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder)
 
 long UMTK::read() {
 	// wait for the chip to become ready
-	unsigned long value = 0;
-	uint8_t data[4] = { 0 };
-	uint8_t filler = 0x00;
+	unsigned long value;
   digitalWrite(PD_SCK, LOW);
-	// pulse the clock pin 24 times to read the data
-  data[0] = shiftMeow(DOUT, PD_SCK, LSBFIRST);
-	data[1] = shiftMeow(DOUT, PD_SCK, LSBFIRST);
-	data[2] = shiftMeow(DOUT, PD_SCK, LSBFIRST);
-	data[3] = shiftMeow(DOUT, PD_SCK, LSBFIRST);
-
-	// Construct a 32-bit signed integer
-	value = ( static_cast<unsigned long>(data[3]) << 24
-			| static_cast<unsigned long>(data[2]) << 16
-			| static_cast<unsigned long>(data[1]) << 8
-			| static_cast<unsigned long>(data[0]) );
-
+	// pulse the clock pin 32 times to read the data
+  value = shiftMeow(DOUT, PD_SCK, LSBFIRST);
 	return static_cast<long>(value);
 }
 

@@ -1,28 +1,17 @@
-/*
- * circuits4you.com
- * 2016 November 25
- * Load Cell UMTK Module Interface with Arduino to measure weight in Kgs
- Arduino 
- pin 
- 2 -> UMTK CLK
- 3 -> DOUT
- 5V -> VCC
- GND -> GND
- 
- Most any pin on the Arduino Uno will be compatible with DOUT/CLK.
- The UMTK board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
-*/
- 
-#include "UMTK.h"  //You must have this library in your arduino library folder
- 
-#define DOUT  31
-#define CLK  2
- 
-UMTK scale(DOUT, CLK);
+#include "UMTK.h"  
+#include <HX711.h> //You must have this library in your arduino library folder
+
+#define DOUT_Dis 31
+#define DOUT_Load 23 
+#define CLK_Dis 30
+#define CLK_Load 22
+
+UMTK Slide(DOUT_Dis, CLK_Dis);
+HX711 LoadCell(DOUT_Load, CLK_Load);
  
 //Change this calibration factor as per your load cell once it is found you many need to vary it in thousands
-float calibration_factor_loadcell = -22025; //-106600 worked for my 40Kg max scale setup 
-float calibration_factor_scale = -100.8
+float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale setup 
+float calibration_factor_displacement = -100.8;
  
 //=============================================================================================
 //                         SETUP
@@ -36,10 +25,13 @@ void setup() {
   Serial.println("Press z,x,c,v to decrease calibration factor by 10,100,1000,10000 respectively");
   Serial.println("Press t for tare");
   */
-  scale.set_scale();
-  scale.tare(); //Reset the scale to 0
+  LoadCell.set_scale();
+  LoadCell.tare(); //Reset the scale to 0
+  Slide.set_scale();
+  Slide.tare(); //Reset the scale to 0
  
-  long zero_factor = scale.read_average(); //Get a baseline reading
+  long zero_factor_load = LoadCell.read_average(); //Get a baseline reading
+  long zero_factor_displacement = Slide.read_average(); //Get a baseline reading
   /*Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
   Serial.println(zero_factor);
   */
@@ -50,37 +42,41 @@ void setup() {
 //=============================================================================================
 void loop() {
  
-  scale.set_scale(calibration_factor); //Adjust to this calibration factor
+  LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
+  Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
  
   Serial.print("Reading: ");
-  Serial.println(scale.get_units(), 3);
-  Serial.print(scale.read());
-  Serial.print(" mm"); //Change this to kg and re-adjust the calibration factor if you follow SI units like a sane person
-  Serial.print(" calibration_factor: ");
-  Serial.print(calibration_factor);
+  Serial.print(LoadCell.get_units(), 3);
+  Serial.print(" ");
+  Serial.print(Slide.get_units(), 3);
+  Serial.print(" ");
+//  Serial.print(Slide.read());
+//  Serial.print(" calibration_factor: ");
+//  Serial.print(calibration_factor);
   Serial.println();
  
   if(Serial.available())
   {
     char temp = Serial.read();
     if(temp == '+' || temp == 'a')
-      calibration_factor += 10;
+      calibration_factor_load += 10;
     else if(temp == '-' || temp == 'z')
-      calibration_factor -= 10;
+      calibration_factor_load -= 10;
     else if(temp == 's')
-      calibration_factor += 100;  
+      calibration_factor_load += 100;  
     else if(temp == 'x')
-      calibration_factor -= 100;  
+      calibration_factor_load -= 100;  
     else if(temp == 'd')
-      calibration_factor += 1000;  
+      calibration_factor_load += 1000;  
     else if(temp == 'c')
-      calibration_factor -= 1000;
+      calibration_factor_load -= 1000;
     else if(temp == 'f')
-      calibration_factor += 10000;  
+      calibration_factor_load += 10000;  
     else if(temp == 'v')
-      calibration_factor -= 10000;  
+      calibration_factor_load -= 10000;  
     else if(temp == 't')
-      scale.tare();  //Reset the scale to zero
+      LoadCell.tare();
+      Slide.tare(); //Reset to zero
   }
 }
 //================================================================
