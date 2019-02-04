@@ -6,12 +6,16 @@
 #define CLK_Dis 30
 #define CLK_Load 22
 
+#define BUTTON 2
+
 UMTK Slide(DOUT_Dis, CLK_Dis);
 HX711 LoadCell(DOUT_Load, CLK_Load);
  
 //Change this calibration factor as per your load cell once it is found you many need to vary it in thousands
 float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale setup 
 float calibration_factor_displacement = -100.8;
+
+int lastButtonState = 0;
  
 //=============================================================================================
 //                         SETUP
@@ -35,6 +39,8 @@ void setup() {
   /*Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
   Serial.println(zero_factor);
   */
+
+  pinMode(BUTTON, INPUT);
 }
  
 //=============================================================================================
@@ -44,16 +50,26 @@ void loop() {
  
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
+
+  if(digitalRead(BUTTON) == HIGH){
+    if(lastButtonState == 1){
+      lastButtonState = 0;
+      Serial.print("END\n");
+    }
+    else{
+      lastButtonState = 1;
+      Serial.print("BEGIN\n");
+    }
+    delay(300);
+  }
  
-  Serial.print("Reading: ");
-  Serial.print(LoadCell.get_units(), 3);
-  Serial.print(" ");
+//  Serial.print("Reading: ");
   Serial.print(Slide.get_units(), 3);
-  Serial.print(" ");
+  Serial.print(", ");
+  Serial.println(LoadCell.get_units(), 3);
 //  Serial.print(Slide.read());
 //  Serial.print(" calibration_factor: ");
 //  Serial.print(calibration_factor);
-  Serial.println();
  
   if(Serial.available())
   {
