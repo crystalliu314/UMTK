@@ -16,19 +16,35 @@ float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale s
 float calibration_factor_displacement = -100.8;
 
 int lastButtonState = 0;
- 
+const int motorPin1 = 7;
+const int motorPin2 = 8;
+long set_speed = 0.833;
+int max_control = 1024;
+int min_control = 0;
+double control_signal = set_speed/4 * 1024;
+long dis_now = 0;
+long t_now = 0;
+long t_last_PID;
+long T_sample = 5;
+long dt = 0;
+double total_error = 0;
+double last_error;
+double error;
+
+double pid_p = 0;
+double pid_i = 0;
+double pid_d = 0;
+double Kp = 1;
+double Ki = 0;  
+double Kd = 0; 
 //=============================================================================================
 //                         SETUP
 //=============================================================================================
 void setup() {
   Serial.begin(9600);
-  /*Serial.println("UMTK Calibration");
-  Serial.println("Remove all weight from scale");
-  Serial.println("After readings begin, place known weight on scale");
-  Serial.println("Press a,s,d,f to increase calibration factor by 10,100,1000,10000 respectively");
-  Serial.println("Press z,x,c,v to decrease calibration factor by 10,100,1000,10000 respectively");
-  Serial.println("Press t for tare");
-  */
+  
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -51,7 +67,7 @@ void loop() {
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
 
-  if(digitalRead(BUTTON) == HIGH){
+/*  if(digitalRead(BUTTON) == HIGH){
     if(lastButtonState == 1){
       lastButtonState = 0;
       Serial.print("END\n");
@@ -62,15 +78,22 @@ void loop() {
     }
     delay(300);
   }
- 
-//  Serial.print("Reading: ");
+ */
+  long dis_last = dis_now;
+  long t_last = t_now;
+  long dis_now = Slide.get_units();
+  long t_now = millis();
+  long cur_speed = abs((dis_now - dis_last)/(t_now - t_last));
+  
+
+  PID_Control();
+  
+  Serial.print(t_now);
+  Serial.print(", ");
   Serial.print(Slide.get_units(), 3);
   Serial.print(", ");
   Serial.println(LoadCell.get_units(), 3);
-//  Serial.print(Slide.read());
-//  Serial.print(" calibration_factor: ");
-//  Serial.print(calibration_factor);
- 
+
   if(Serial.available())
   {
     char temp = Serial.read();
@@ -94,5 +117,31 @@ void loop() {
       LoadCell.tare();
       Slide.tare(); //Reset to zero
   }
+}
+
+void PID_Control(){
+  
+  if (t_now - t_last_PID > T_sample){
+    t_last_PID = t_now;
+    t_now = millis();
+    dt = t_now - t_last_PID;
+
+    error = (set_speed - cur_speed);
+    pid_p = Kp*error;
+    pid_d = Kd*((error - last_error)/dt);
+    pid_i = Ki*total_error;  
+
+    last_error = error;
+    total_error = error*dt + total_error;
+  }
+  control_signal = pid_p + pid_d + pid_i;
+  
+  if (control_signal > max_control){
+    control_signal = max_control;
+  }
+  else if(control_signal < min_control){
+    control_signal = min_control;
+  }
+  
 }
 //================================================================
