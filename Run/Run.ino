@@ -28,18 +28,18 @@ long t_now = 0;
 long t_last = 0;
 long t_last_PID;
 long T_sample = 50;
-double dt = 0;
+long dt = 0;
 float cur_speed = 0;
-double total_error = 0;
-double last_error;
-double error;
+float total_error = 0;
+float last_error;
+float error;
 
-double pid_p = 0;
-double pid_i = 0;
-double pid_d = 0;
-double Kp = 100;
-double Ki = 0;  
-double Kd = 0; 
+long pid_p = 0;
+long pid_i = 0;
+long pid_d = 0;
+float Kp = 100;
+float Ki = 0;  
+float Kd = 0; 
 //=============================================================================================
 //                         SETUP
 //=============================================================================================
@@ -93,7 +93,7 @@ void loop() {
   
   analogWrite(motorPin1, control_signal);
   analogWrite(motorPin2, 0);
-  //delay(5);
+  delay(5);
   
 //  Serial.print(t_now);
 //  Serial.print(", ");
@@ -128,8 +128,15 @@ void PID_Control(){
 
     error = (set_speed - cur_speed);
     pid_p = Kp*error;
-    pid_d = Kd*((error - last_error)/dt);
+    pid_d = 0; //Kd*((error - last_error)/dt);
     pid_i = Ki*total_error;  
+
+    Serial.print("Control Parameters: ");
+    Serial.print(pid_p);
+    Serial.print(", ");
+    Serial.print(pid_d);
+    Serial.print(", ");
+    Serial.println(pid_i);
 
     last_error = error;
     total_error = error*dt + total_error;
