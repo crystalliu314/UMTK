@@ -18,15 +18,18 @@ float calibration_factor_displacement = -100.8;
 int lastButtonState = 0;
 const int motorPin1 = 7;
 const int motorPin2 = 8;
-long set_speed = 0.833;
+float set_speed = 0.833;
 int max_control = 1024;
 int min_control = 0;
-double control_signal = set_speed/4 * 1024;
+long control_signal = set_speed/3 * 1024;
 long dis_now = 0;
+long dis_last = 0;
 long t_now = 0;
+long t_last = 0;
 long t_last_PID;
-long T_sample = 5;
-long dt = 0;
+long T_sample = 50;
+double dt = 0;
+float cur_speed = 0;
 double total_error = 0;
 double last_error;
 double error;
@@ -34,7 +37,7 @@ double error;
 double pid_p = 0;
 double pid_i = 0;
 double pid_d = 0;
-double Kp = 1;
+double Kp = 100;
 double Ki = 0;  
 double Kd = 0; 
 //=============================================================================================
@@ -79,43 +82,40 @@ void loop() {
     delay(300);
   }
  */
-  long dis_last = dis_now;
-  long t_last = t_now;
-  long dis_now = Slide.get_units();
-  long t_now = millis();
-  long cur_speed = abs((dis_now - dis_last)/(t_now - t_last));
+  dis_last = dis_now;
+  t_last = t_now;
+  dis_now = Slide.get_units();
+  t_now = millis();
+  cur_speed = abs((dis_now - dis_last)/(t_now - t_last));
   
 
   PID_Control();
   
-  Serial.print(t_now);
-  Serial.print(", ");
+  analogWrite(motorPin1, control_signal);
+  analogWrite(motorPin2, 0);
+  //delay(5);
+  
+//  Serial.print(t_now);
+//  Serial.print(", ");
   Serial.print(Slide.get_units(), 3);
+  Serial.print(", ");
+  Serial.print(cur_speed);
+  Serial.print(", ");
+  Serial.print(control_signal);
+  Serial.print(", ");
+  Serial.print(error);
+  Serial.print(", ");
+  Serial.print(set_speed);
   Serial.print(", ");
   Serial.println(LoadCell.get_units(), 3);
 
   if(Serial.available())
   {
     char temp = Serial.read();
-    if(temp == '+' || temp == 'a')
-      calibration_factor_load += 10;
-    else if(temp == '-' || temp == 'z')
-      calibration_factor_load -= 10;
-    else if(temp == 's')
-      calibration_factor_load += 100;  
-    else if(temp == 'x')
-      calibration_factor_load -= 100;  
-    else if(temp == 'd')
-      calibration_factor_load += 1000;  
-    else if(temp == 'c')
-      calibration_factor_load -= 1000;
-    else if(temp == 'f')
-      calibration_factor_load += 10000;  
-    else if(temp == 'v')
-      calibration_factor_load -= 10000;  
-    else if(temp == 't')
+    if(temp == 't'){
       LoadCell.tare();
       Slide.tare(); //Reset to zero
+    }
   }
 }
 
@@ -134,7 +134,7 @@ void PID_Control(){
     last_error = error;
     total_error = error*dt + total_error;
   }
-  control_signal = pid_p + pid_d + pid_i;
+  control_signal = pid_p + pid_d + pid_i + 100;
   
   if (control_signal > max_control){
     control_signal = max_control;
