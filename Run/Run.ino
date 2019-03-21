@@ -16,14 +16,15 @@ float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale s
 float calibration_factor_displacement = -100.8;
 
 int lastButtonState = 0;
+int i = 0;
 const int motorPin1 = 7;
 const int motorPin2 = 8;
-float set_speed = 0.833;
-int max_control = 1024;
-int min_control = 0;
-long control_signal = set_speed/3 * 1024;
-long dis_now = 0;
-long dis_last = 0;
+float set_speed = 1.5;
+int max_control = 1023;
+int min_control = 80;
+long control_signal = set_speed/3 * 1023;
+double dis_now = 0;
+double dis_last = 0;
 long t_now = 0;
 long t_last = 0;
 long t_last_PID;
@@ -37,7 +38,7 @@ float error;
 long pid_p = 0;
 long pid_i = 0;
 long pid_d = 0;
-float Kp = 100;
+float Kp = 50;
 float Ki = 0;  
 float Kd = 0; 
 //=============================================================================================
@@ -82,32 +83,32 @@ void loop() {
     delay(300);
   }
  */
+  i = i+1;
+  if(i == 10){
+    i = 0;
   dis_last = dis_now;
   t_last = t_now;
-  dis_now = Slide.get_units();
+  dis_now = (Slide.get_units());
   t_now = millis();
-  cur_speed = abs((dis_now - dis_last)/(t_now - t_last));
+  cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
   
 
   PID_Control();
-  
+
   analogWrite(motorPin1, control_signal);
   analogWrite(motorPin2, 0);
-  delay(5);
+  }
+
   
-//  Serial.print(t_now);
-//  Serial.print(", ");
-  Serial.print(Slide.get_units(), 3);
-  Serial.print(", ");
-  Serial.print(cur_speed);
+  Serial.print(t_now);
   Serial.print(", ");
   Serial.print(control_signal);
   Serial.print(", ");
-  Serial.print(error);
+  Serial.print(cur_speed);
   Serial.print(", ");
-  Serial.print(set_speed);
+  Serial.print(-Slide.get_units(), 3);
   Serial.print(", ");
-  Serial.println(LoadCell.get_units(), 3);
+  Serial.println(-LoadCell.get_units(), 3);
 
   if(Serial.available())
   {
@@ -117,6 +118,7 @@ void loop() {
       Slide.tare(); //Reset to zero
     }
   }
+  delay(10);
 }
 
 void PID_Control(){
@@ -131,13 +133,13 @@ void PID_Control(){
     pid_d = 0; //Kd*((error - last_error)/dt);
     pid_i = Ki*total_error;  
 
-    Serial.print("Control Parameters: ");
+ /*   Serial.print("Control Parameters: ");
     Serial.print(pid_p);
     Serial.print(", ");
     Serial.print(pid_d);
     Serial.print(", ");
     Serial.println(pid_i);
-
+*/
     last_error = error;
     total_error = error*dt + total_error;
   }

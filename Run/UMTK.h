@@ -50,7 +50,7 @@ class UMTK
 
 		// returns get_value() divided by SCALE, that is the raw value divided by a value obtained via calibration
 		// times = how many readings to do
-		float get_units(byte times = 1);
+		double get_units(byte times = 1);
 
 		// set the OFFSET value for tare weight; times = how many times to read the tare value
 		void tare(byte times = 10);
