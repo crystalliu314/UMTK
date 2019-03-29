@@ -1,24 +1,16 @@
 #include "UMTK.h"  
+#include "PCB_PinMap.h"
 #include <HX711.h> //You must have this library in your arduino library folder
 
-#define DOUT_Dis 31
-#define DOUT_Load 23 
-#define CLK_Dis 30
-#define CLK_Load 22
-
-#define BUTTON 2
-
-UMTK Slide(DOUT_Dis, CLK_Dis);
-HX711 LoadCell(DOUT_Load, CLK_Load);
+UMTK Slide(SLIDE_DATA, SLIDE_CLOCK);
+HX711 LoadCell(LOADCELL_DATA, LOADCELL_CLOCK);
  
 //Change this calibration factor as per your load cell once it is found you many need to vary it in thousands
 float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale setup 
 float calibration_factor_displacement = -98.9;
 
-int lastButtonState = 0;
+int lastSWITCH_STARTState = 0;
 int i = 0;
-const int motorPin1 = 7;
-const int motorPin2 = 8;
 float set_speed = 1.5;
 int max_control = 1023;
 int min_control = 80;
@@ -47,8 +39,8 @@ float Kd = 0;
 void setup() {
   Serial.begin(9600);
   
-  pinMode(motorPin1, OUTPUT);
-  pinMode(motorPin2, OUTPUT);
+  pinMode(M_IN1, OUTPUT);
+  pinMode(M_IN2, OUTPUT);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -56,11 +48,12 @@ void setup() {
  
   long zero_factor_load = LoadCell.read_average(); //Get a baseline reading
   long zero_factor_displacement = Slide.read_average(); //Get a baseline reading
-  /*Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
-  Serial.println(zero_factor);
-  */
+  pinMode(SWITCH_START, INPUT);
+  pinMode(SWITCH_STOP, INPUT);
+  pinMode(SWITCH_ZERO, INPUT);
+  pinMode(SWITCH_UP, INPUT);
+  pinMode(SWITCH_DOWN, INPUT);
 
-  pinMode(BUTTON, INPUT);
 }
  
 //=============================================================================================
@@ -71,13 +64,13 @@ void loop() {
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
 
-/*  if(digitalRead(BUTTON) == HIGH){
-    if(lastButtonState == 1){
-      lastButtonState = 0;
+/*  if(digitalRead(SWITCH_START) == HIGH){
+    if(lastSWITCH_STARTState == 1){
+      lastSWITCH_STARTState = 0;
       Serial.print("END\n");
     }
     else{
-      lastButtonState = 1;
+      lastSWITCH_STARTState = 1;
       Serial.print("BEGIN\n");
     }
     delay(300);
@@ -95,8 +88,8 @@ void loop() {
 
   PID_Control();
 
-  analogWrite(motorPin1, control_signal);
-  analogWrite(motorPin2, 0);
+  analogWrite(M_IN1, control_signal);
+  analogWrite(M_IN2, 0);
   }
 
   
@@ -117,6 +110,11 @@ void loop() {
       LoadCell.tare();
       Slide.tare(); //Reset to zero
     }
+  }
+  
+  if(digitalRead(SWITCH_START) == HIGH){
+      LoadCell.tare();
+      Slide.tare();
   }
   delay(10);
 }
