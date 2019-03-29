@@ -13,7 +13,7 @@ HX711 LoadCell(DOUT_Load, CLK_Load);
  
 //Change this calibration factor as per your load cell once it is found you many need to vary it in thousands
 float calibration_factor_load = -22025; //-106600 worked for my 40Kg max scale setup 
-float calibration_factor_displacement = -100.8;
+float calibration_factor_displacement = -98.9;
 
 int lastButtonState = 0;
 int i = 0;
