@@ -80,14 +80,14 @@ long UMTK::read_average(byte times) {
 	return sum / times;
 }
 
-double UMTK::get_value(byte times) {
-	return read_average(times) - OFFSET;
+double UMTK::get_units(byte times) {
+	return (read_average(times) - OFFSET)/SCALE;
 }
-
-float UMTK::get_units(byte times) {
+/*
+double UMTK::get_units(byte times) {
 	return get_value(times) / SCALE;
 }
-
+*/
 void UMTK::tare(byte times) {
 	double sum = read_average(times);
 	set_offset(sum);
