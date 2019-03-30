@@ -1,6 +1,7 @@
 #define BUTTON 2
 
 int lastButtonState = 0;
+float x,y = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -23,7 +24,7 @@ void loop() {
     }
     delay(500);
   }
- 
+  
   //Serial.print("Reading: ");
   Serial.print(random(0, 500));
   Serial.print(", ");

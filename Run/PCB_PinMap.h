@@ -1,4 +1,4 @@
-// Pin mapping for tensil cat PCB
+// Pin mapping for tensile cat PCB
 
 #define SLIDE_DATA 3
 #define SLIDE_CLOCK 4
@@ -55,6 +55,6 @@
 #define SWITCH_START A5
 #define SWITCH_STOP A6
 #define SWITCH_ZERO A7
-#define SWITCH_UP A8
-#define SWITCH_DOWN A9
+#define SWITCH_MVUP A8
+#define SWITCH_MVDOWN A9
 #define SWITCH_AUX A10

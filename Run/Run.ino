@@ -51,8 +51,8 @@ void setup() {
   pinMode(SWITCH_START, INPUT);
   pinMode(SWITCH_STOP, INPUT);
   pinMode(SWITCH_ZERO, INPUT);
-  pinMode(SWITCH_UP, INPUT);
-  pinMode(SWITCH_DOWN, INPUT);
+  pinMode(SWITCH_MVUP, INPUT);
+  pinMode(SWITCH_MVDOWN, INPUT);
 
 }
  
@@ -64,35 +64,54 @@ void loop() {
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
 
-/*  if(digitalRead(SWITCH_START) == HIGH){
-    if(lastSWITCH_STARTState == 1){
-      lastSWITCH_STARTState = 0;
-      Serial.print("END\n");
-    }
-    else{
-      lastSWITCH_STARTState = 1;
-      Serial.print("BEGIN\n");
-    }
+  if(digitalRead(SWITCH_START) == HIGH){
+    lastSWITCH_STARTState = 1;
+    Serial.print("BEGIN\n");
     delay(300);
   }
- */
+  if(digitalRead(SWITCH_STOP) == HIGH && lastSWITCH_STARTState == 1){
+    lastSWITCH_STARTState = 0;
+    Serial.print("END\n");
+    delay(300);
+  }
+  if(digitalRead(SWITCH_MVUP) == HIGH && lastSWITCH_STARTState == 0){
+    analogWrite(M_IN1, max_control);
+    analogWrite(M_IN2, 0);
+    delay(300);
+    analogWrite(M_IN1, 0);
+    analogWrite(M_IN2, 0);
+  }
+  if(digitalRead(SWITCH_MVDOWN) == HIGH && lastSWITCH_STARTState == 0){
+    analogWrite(M_IN1, -(max_control));
+    analogWrite(M_IN2, 0);
+    delay(300);
+    analogWrite(M_IN1, 0);
+    analogWrite(M_IN2, 0);
+  }
+  
   i = i+1;
   if(i == 10){
     i = 0;
-  dis_last = dis_now;
-  t_last = t_now;
-  dis_now = (Slide.get_units());
-  t_now = millis();
-  cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
+    dis_last = dis_now;
+    t_last = t_now;
+    dis_now = (Slide.get_units());
+    t_now = millis();
+    cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
+    
   
-
-  PID_Control();
-
-  analogWrite(M_IN1, control_signal);
-  analogWrite(M_IN2, 0);
+    PID_Control();
+  
+    analogWrite(M_IN1, control_signal);
+    analogWrite(M_IN2, 0);
   }
 
+  //Print disp, force data to serial (so python can save to .csv file)
+  Serial.print(Slide.get_units());
+  Serial.print(", ");
+  Serial.println(LoadCell.get_units());
   
+
+  /*
   Serial.print(t_now);
   Serial.print(", ");
   Serial.print(control_signal);
@@ -102,20 +121,23 @@ void loop() {
   Serial.print(-Slide.get_units(), 3);
   Serial.print(", ");
   Serial.println(-LoadCell.get_units(), 3);
+  */
 
-  if(Serial.available())
-  {
+  /*
+  if(Serial.available()){
     char temp = Serial.read();
     if(temp == 't'){
       LoadCell.tare();
       Slide.tare(); //Reset to zero
     }
   }
+  */
   
-  if(digitalRead(SWITCH_START) == HIGH){
+  if(digitalRead(SWITCH_ZERO) == HIGH){
       LoadCell.tare();
       Slide.tare();
   }
+  
   delay(10);
 }
 
