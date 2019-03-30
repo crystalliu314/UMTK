@@ -6,136 +6,109 @@ import datetime
 import time
 import sys
 import serial
-import glob
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from matplotlib import style
-import Image
-import pandas
 
 #Setup for Serial Communication with Arduino (Using USB Cable)
 arduinoSerial = serial.Serial('/dev/cu.usbmodem14101',9600)
+
+#Specify directory to save files to
+directory = "/Users/monicaburgers/Desktop/"
+
+#Initilaize variables to store incoming data
 xdata = []
 ydata = []
-#figNum = 0
-
-def animate(i):
-    list_of_files = glob.glob('/Users/monicaburgers/Desktop/*.csv') # * means all if need specific format then *.csv
-    latest_file = max(list_of_files, key=os.path.getctime)
-    fileName = str(latest_file)
-
-    graph_data = open(fileName,'r').read()
-    lines = graph_data.split('\n')
-    lines.pop(0)
-    xs = []
-    ys = []
-    for line in lines:
-        if len(line) > 1:
-            x, y = line.split(', ')
-            xs.append(float(x))
-            ys.append(float(y))
-    ax1.clear()
-    ax1.plot(xs, ys)
-
-def animateGraph(file):
-    ani = animation.FuncAnimation(fig, animate, interval=500)
-    plt.show()
-
-def makeFig(number):
-    figure = plt.figure(number)
-    plt.ion()
-    plt.pause(0.0001)
-    plt.show()
-    plt.pause(0.0001)
-    plt.cla()
-    plt.pause(0.0001)
-    plt.clf()
-    plt.pause(0.0001)
-    plt.close(figure)
-    plt.pause(0.0001)
-    return figure
 
 def graph(currentSerialLine):
-    x, y = currentSerialLine.split(', ')
-    ydata.append(float(y))
+    #This function takes the input of a single line of data rom the Arduino and
+    # adds it to the graph. It assumes there are only 2 numbers, separated by a
+    # comma.
+
+    x, y = currentSerialLine.split(', ') #Split the incoming string into 2 numbers
+    ydata.append(float(y)) #Convert strings to numbers
     xdata.append(float(x))
-    plt.plot(xdata,ydata, 'b')
+
+    #plt.suptitle("") #Add title to graph
+    plt.xlabel("Displacement (mm)") #Add axis labels
     plt.pause(0.0001)
-    plt.draw()
+    plt.ylabel("Scale Reading (kg)")
+    plt.pause(0.0001)
+
+    plt.plot(xdata,ydata, 'b') #Add the new data point to the plot
+    plt.pause(0.0001)
+    plt.draw() #Redraw the graph window
     plt.pause(0.0001)
 
 def main():
     #---SETUP---
-    record = False
-    xdata = []
-    ydata = []
-    #if(figNum > 0):
-        #plt.close(figNum - 1)
-    #fig = makeFig(figNum)
+    record = False #Don't record incoming data until the test is ready to be run
 
-    plt.ion()
+    plt.ion() #Turn on interactive mode for graph
     plt.pause(0.0001)
-    plt.show()
+    plt.show() #Display the graph
     plt.pause(0.0001)
-    plt.cla()
+    plt.clf() #Clear the graph
     plt.pause(0.0001)
-    plt.clf()
-    plt.pause(0.0001)
+
+    fileString = raw_input('Enter name of data file: ') #Get user to input desired nme of the file to save data to
 
     print "Press button to start recording data."
     #---SETUP---
 
     #---LOOP---
     while True:
-
-
         #Waits for Arduino to send data through Serial
         if arduinoSerial.inWaiting():
             #Reads single line from serial
             currentSerialLine = arduinoSerial.readline()
 
+            #If 'Start' button pressed
             if currentSerialLine == "BEGIN\n":
-                record = True
+                record = True #Start recording data
                 print "Starting Test"
 
-                #Initializing File Name to Current Date and File Path
-                currentDate = datetime.datetime.now()
-                fileName = str(currentDate) + '.csv'
-                completeFileNameAndPath = os.path.join("/Users/monicaburgers/Desktop/", fileName)
+                #Create file to save data to within specified directory
+                fileName = str(fileString) + '.csv'
+                completeFileNameAndPath = os.path.join(directory, fileName)
                 datasheetFile = open(completeFileNameAndPath, "a")
 
-                header = "Displacement (mm), Scale Reading (kg)"
+                #Add a header label to the .csv file
+                header = "Displacement (mm), Scale Reading (kg) \n"
                 datasheetFile.write(header)
                 print header
 
             elif record == True:
+                #If 'End' button pressed
                 if currentSerialLine == "END\n":
                     print "Ending Test"
                     record = False
+
+                    #Save image of the graph to specified directory
+                    imageFileName = str(fileString) + '.png'
+                    imageFilePath = os.path.join(directory, imageFileName)
+                    plt.savefig(imageFilePath)
+
+                    #Close the data file
                     datasheetFile.close()
-                    #figNum += 1
-                    #main()
+
+                    #Ask if another test is going to be run
                     while True:
                         answer = raw_input('Run another test? (y/n): ')
                         if answer in ('y', 'n'):
                             break
                         print 'Invalid input.'
                     if answer == 'y':
+                        #If another test is being run, restart the script
                         os.execl(sys.executable, sys.executable, *sys.argv)
                     else:
+                        #If testing is done, close the script
                         print 'Goodbye'
                         break
                 else:
                     print currentSerialLine
-                    datasheetFile.write(currentSerialLine)
-                    #datasheetFile.close()
+                    datasheetFile.write(currentSerialLine) #Write new line of data to file
+                    graph(currentSerialLine) #Graph the new data point
 
-                    #animateGraph(completeFileNameAndPath)
-                    #plt.close()
-
-                    graph(currentSerialLine)
-
-                    #datasheetFile = open(completeFileNameAndPath, "a")
     #---LOOP---
 
 if __name__ == '__main__':
