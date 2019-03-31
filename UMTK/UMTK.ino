@@ -55,7 +55,7 @@ enum sevseg {
 //                         SETUP
 //=============================================================================================
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -161,25 +161,25 @@ void loop() {
     case DIG1:
         sevenSeg::refresh(0);
         sevseg = DIG2;
-        delay(1);
+        delay(2);
         break;
         
     case DIG2:
         sevenSeg::refresh(1);
         sevseg = DIG3;
-        delay(1);
+        delay(2);
         break;
         
     case DIG3:
         sevenSeg::refresh(2);
         sevseg = DIG4;
-        delay(1);
+        delay(2);
         break;
         
     case DIG4:
         sevenSeg::refresh(3);
         sevseg = DIG_OFF;
-        delay(1);
+        delay(2);
         break;
 
     case DIG_OFF:
@@ -187,15 +187,16 @@ void loop() {
         sevenSeg::setInt( 1, Slide.get_units()*10, 1);
         sevenSeg::setInt( 2, LoadCell.get_units()*9.8, 1);
         sevseg = DIG1;
+        Serial.print(Slide.get_units());
+        Serial.print(", ");
+        Serial.println(LoadCell.get_units());
         break;
   }
 
   
 //
   //Print disp, force data to serial (so python can save to .csv file)
-  Serial.print(Slide.get_units());
-  Serial.print(", ");
-  Serial.println(LoadCell.get_units());
+
   
 
   /*
