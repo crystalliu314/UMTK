@@ -1,5 +1,6 @@
 #include "UMTK.h"  
 #include "PCB_PinMap.h"
+#include "SevSeg.h"
 #include <HX711.h> //You must have this library in your arduino library folder
 
 UMTK Slide(SLIDE_DATA, SLIDE_CLOCK);
@@ -33,6 +34,19 @@ long pid_d = 0;
 float Kp = 50;
 float Ki = 0;  
 float Kd = 0; 
+
+SevSeg sevseg1;
+SevSeg sevseg2; 
+
+
+enum state {
+  JOG_UP,
+  JOG_DOWN,
+  RECORDING,
+  STANDBY
+} state;
+
+
 //=============================================================================================
 //                         SETUP
 //=============================================================================================
@@ -41,6 +55,9 @@ void setup() {
   
   pinMode(M_IN1, OUTPUT);
   pinMode(M_IN2, OUTPUT);
+  pinMode(MOTOR_DISABLE, OUTPUT);
+  pinMode(DISP1_OE, OUTPUT);
+  pinMode(DISP2_OE, OUTPUT);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -53,6 +70,22 @@ void setup() {
   pinMode(SWITCH_ZERO, INPUT);
   pinMode(SWITCH_MVUP, INPUT);
   pinMode(SWITCH_MVDOWN, INPUT);
+  digitalWrite(MOTOR_DISABLE, LOW);
+  digitalWrite(DISP1_OE, LOW);
+  digitalWrite(DISP2_OE, LOW);
+  state = STANDBY;
+
+  byte numDigits = 4;
+  byte digitPins[] = {DISP_D1, DISP_D2, DISP_D3, DISP_D4};
+  byte segmentPins1[] = {DISP1_A, DISP1_B, DISP1_C, DISP1_D, DISP1_E, DISP1_F, DISP1_G, DISP1_DP};
+  byte segmentPins2[] = {DISP2_A, DISP2_B, DISP2_C, DISP2_D, DISP2_E, DISP2_F, DISP2_G, DISP2_DP};
+  bool resistorsOnSegments = true;
+
+  byte hardwareConfig = N_TRANSISTORS; 
+  sevseg1.begin(hardwareConfig, numDigits, digitPins, segmentPins1, resistorsOnSegments);
+  sevseg1.setBrightness(100);
+  sevseg2.begin(hardwareConfig, numDigits, digitPins, segmentPins2, resistorsOnSegments);
+  sevseg2.setBrightness(100);
 
 }
  
@@ -60,55 +93,93 @@ void setup() {
 //                         LOOP
 //=============================================================================================
 void loop() {
- 
+  
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
 
-  if(digitalRead(SWITCH_START) == HIGH){
-    lastSWITCH_STARTState = 1;
-    Serial.print("BEGIN\n");
-    delay(300);
-  }
-  if(digitalRead(SWITCH_STOP) == HIGH && lastSWITCH_STARTState == 1){
-    lastSWITCH_STARTState = 0;
-    Serial.print("END\n");
-    delay(300);
-  }
-  if(digitalRead(SWITCH_MVUP) == HIGH && lastSWITCH_STARTState == 0){
-    analogWrite(M_IN1, max_control);
-    analogWrite(M_IN2, 0);
-    delay(300);
-    analogWrite(M_IN1, 0);
-    analogWrite(M_IN2, 0);
-  }
-  if(digitalRead(SWITCH_MVDOWN) == HIGH && lastSWITCH_STARTState == 0){
-    analogWrite(M_IN1, -(max_control));
-    analogWrite(M_IN2, 0);
-    delay(300);
-    analogWrite(M_IN1, 0);
-    analogWrite(M_IN2, 0);
-  }
-  
-  i = i+1;
-  if(i == 10){
-    i = 0;
-    dis_last = dis_now;
-    t_last = t_now;
-    dis_now = (Slide.get_units());
-    t_now = millis();
-    cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
+  if(digitalRead(SWITCH_AUX) == LOW){
+    i = i+1;
+    if(i == 10){
+      i = 0;
+      dis_last = dis_now;
+      t_last = t_now;
+      dis_now = (Slide.get_units());
+      t_now = millis();
+      cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
+      
     
-  
-    PID_Control();
-  
-    analogWrite(M_IN1, control_signal);
-    analogWrite(M_IN2, 0);
+      PID_Control();
+    
+      analogWrite(M_IN1, control_signal);
+      analogWrite(M_IN2, 0);
+    }
+  }
+
+
+
+
+  // Process State Machine Actions
+  switch (state){
+    case JOG_UP:
+      if(digitalRead(SWITCH_MVUP) == HIGH){
+        state = STANDBY;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 1023);
+        break;
+      }
+    break;
+
+    case JOG_DOWN:
+      if(digitalRead(SWITCH_MVDOWN) == HIGH){
+        state = STANDBY;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 1023);
+        break;
+      }
+    break;
+
+    case STANDBY:
+      if(digitalRead(SWITCH_MVUP) == LOW){
+        state = JOG_UP;
+        analogWrite(M_IN1, 0);
+        analogWrite(M_IN2, 1023);
+        break;
+      }
+      
+      if(digitalRead(SWITCH_MVDOWN) == LOW){
+        state = JOG_DOWN;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 0);
+        break;
+      }
+
+      if(digitalRead(SWITCH_ZERO) == LOW){
+        LoadCell.tare();
+        Slide.tare();
+      }
+      
+      if(digitalRead(SWITCH_START) == LOW){
+        state = RECORDING;
+        Serial.print("BEGIN\n");
+      }
+    break;
+
+    case RECORDING:
+      if(digitalRead(SWITCH_STOP) == LOW){
+        state = STANDBY;
+        Serial.print("END\n");
+      }
+    break;
   }
 
   //Print disp, force data to serial (so python can save to .csv file)
   Serial.print(Slide.get_units());
   Serial.print(", ");
   Serial.println(LoadCell.get_units());
+  sevseg2.setNumber(8888,1);
+  sevseg2.refreshDisplay();  
+  sevseg1.setNumber(8888,0);
+  sevseg1.refreshDisplay();  
   
 
   /*
@@ -133,12 +204,20 @@ void loop() {
   }
   */
   
-  if(digitalRead(SWITCH_ZERO) == HIGH){
-      LoadCell.tare();
-      Slide.tare();
-  }
-  
+
   delay(10);
+}
+
+void Move_Up(long Control_Signal){
+    analogWrite(M_IN1, Control_Signal);
+    analogWrite(M_IN2, 0);
+    delay(300);
+}
+
+void Move_Down(long Control_Signal){
+    analogWrite(M_IN1, 0);
+    analogWrite(M_IN2, Control_Signal);
+    delay(300);  
 }
 
 void PID_Control(){
