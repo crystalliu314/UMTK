@@ -47,6 +47,7 @@ long HX711::read() {
 	// wait for the chip to become ready
 	while (!is_ready()) {
 		// Will do nothing on Arduino but prevent resets of ESP8266 (Watchdog Issue)
+    Serial.print("h");
 		yield();
 	}
 
@@ -91,7 +92,7 @@ long HX711::read_average(byte times) {
 }
 
 double HX711::get_value(byte times) {
-	return read_average(times) - OFFSET;
+	return read() - OFFSET;
 }
 
 float HX711::get_units(byte times) {

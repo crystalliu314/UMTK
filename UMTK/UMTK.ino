@@ -13,6 +13,7 @@ float calibration_factor_displacement = -98.9;
 
 int lastSWITCH_STARTState = 0;
 int i = 0;
+int loopcount = 0;
 float set_speed = 1.5;
 int max_control = 1023;
 int min_control = 80;
@@ -24,6 +25,8 @@ long t_last = 0;
 long t_last_PID;
 long T_sample = 50;
 long dt = 0;
+float Load = 0;
+float Distance = 0;
 float cur_speed = 0;
 float total_error = 0;
 float last_error;
@@ -184,12 +187,18 @@ void loop() {
 
     case DIG_OFF:
         sevenSeg::refresh(5);
-        sevenSeg::setInt( 1, Slide.get_units()*10, 1);
-        sevenSeg::setInt( 2, LoadCell.get_units()*9.8, 1);
+        if (loopcount > 10){
+        Load = LoadCell.get_units(1);
+        Distance = Slide.get_units();
+        loopcount = 0;
+        };
+        sevenSeg::setInt( 1, abs ((int) round (Distance*10)), 1);
+        sevenSeg::setInt( 2, abs ((int) round (Load*9.8)), 1);
         sevseg = DIG1;
-        Serial.print(Slide.get_units());
+        Serial.print(round (Distance*10));
         Serial.print(", ");
-        Serial.println(LoadCell.get_units());
+        Serial.println(round (Load*9.8));
+        loopcount ++;
         break;
   }
 

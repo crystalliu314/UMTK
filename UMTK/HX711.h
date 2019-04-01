@@ -43,7 +43,7 @@ class HX711
 		long read();
 
 		// returns an average reading; times = how many times to read
-		long read_average(byte times = 10);
+		long read_average(byte times = 1);
 
 		// returns (read_average() - OFFSET), that is the current value without the tare weight; times = how many readings to do
 		double get_value(byte times = 1);
