@@ -14,18 +14,21 @@ float calibration_factor_displacement = -98.9;
 int lastSWITCH_STARTState = 0;
 int i = 0;
 int loopcount = 0;
-float set_speed = 1.5;
+float set_speed = 0.5;
 int max_control = 1023;
-int min_control = 80;
-long control_signal = set_speed/3 * 1023;
+int min_control = 40;
+long control_signal = set_speed * 1023;
 double dis_now = 0;
 double dis_last = 0;
 long t_now = 0;
+long t_start = 0;
+long delta = 0;
 long t_last = 0;
 long t_last_PID;
 long T_sample = 50;
 long dt = 0;
 float Load = 0;
+float last_load = 0;
 float Distance = 0;
 float cur_speed = 0;
 float total_error = 0;
@@ -36,14 +39,15 @@ long pid_p = 0;
 long pid_i = 0;
 long pid_d = 0;
 float Kp = 50;
-float Ki = 0;  
-float Kd = 0; 
+float Ki = 0.5;  
+float Kd = 200; 
 
 enum state {
   JOG_UP,
   JOG_DOWN,
   RECORDING,
-  STANDBY
+  STANDBY,
+  AUX
 } state;
 
 enum sevseg {
@@ -83,24 +87,42 @@ void loop() {
   
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
-
-  if(digitalRead(SWITCH_AUX) == LOW){
-    i = i+1;
-    if(i == 10){
-      i = 0;
-      dis_last = dis_now;
-      t_last = t_now;
-      dis_now = (Slide.get_units());
-      t_now = millis();
-      cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
-      
-    
-      PID_Control();
-    
-      analogWrite(M_IN1, control_signal);
-      analogWrite(M_IN2, 0);
-    }
-  }
+//
+//  if(digitalRead(SWITCH_AUX) == LOW){
+////    i = i+1;
+////    if(i == 10){
+////      i = 0;
+////      dis_last = dis_now;
+////      t_last = t_now;
+////      dis_now = (Slide.get_units());
+////      t_now = millis();
+////      cur_speed = fabs((1000*(dis_now - dis_last))/((double)(t_now - t_last)));
+////      
+////    
+////      PID_Control();
+////    
+////      analogWrite(M_IN1, control_signal);
+////      analogWrite(M_IN2, 0);
+////    }
+//        t_start = millis();
+//        t_now = t_start;
+//        if (delta < 1000){
+//        analogWrite(M_IN1, 100);
+//        analogWrite(M_IN2, 0);
+//        delay(10);
+//        delta = t_now - t_start;
+//        Serial.print(t_start);
+//        Serial.print(", ");
+//        Serial.print(t_now);
+//        Serial.print(", ");
+//        t_now = millis();
+//        }
+//        else{
+//        analogWrite(M_IN1, 1023);
+//        analogWrite(M_IN2, 1023);
+//        }
+//
+//  }
 
 
 
@@ -135,7 +157,7 @@ void loop() {
       
       if(digitalRead(SWITCH_MVDOWN) == LOW){
         state = JOG_DOWN;
-        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN1, 100);
         analogWrite(M_IN2, 0);
         break;
       }
@@ -150,12 +172,42 @@ void loop() {
         state = RECORDING;
         Serial.print("BEGIN\n");
       }
+
+      if(digitalRead(SWITCH_AUX) == LOW){
+        state = AUX;
+        analogWrite(M_IN1, 100);
+        analogWrite(M_IN2, 0);
+      }
     break;
 
     case RECORDING:
       if(digitalRead(SWITCH_STOP) == LOW){
         state = STANDBY;
         Serial.print("END\n");
+      }
+    break;
+ 
+    case AUX:
+      if((last_load - Load) > 0.1){
+        state = STANDBY;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 1023);
+        break;
+      } 
+
+      
+      if(digitalRead(SWITCH_MVUP) == LOW){
+        state = STANDBY;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 1023);
+        break;
+      }
+      
+      if(digitalRead(SWITCH_MVDOWN) == LOW){
+        state = STANDBY;
+        analogWrite(M_IN1, 1023);
+        analogWrite(M_IN2, 1023);
+        break;
       }
     break;
   }
@@ -188,19 +240,33 @@ void loop() {
     case DIG_OFF:
         sevenSeg::refresh(5);
         if (loopcount > 10){
-        Load = LoadCell.get_units(1);
+        last_load = Load;
+        Load = - LoadCell.get_units(1);
         Distance = Slide.get_units();
         loopcount = 0;
         };
         sevenSeg::setInt( 1, abs ((int) round (Distance*10)), 1);
         sevenSeg::setInt( 2, abs ((int) round (Load*9.8)), 1);
         sevseg = DIG1;
-        Serial.print(round (Distance*10));
+        Serial.print(millis());
+        Serial.print(", ");
+/*        Serial.print(control_signal);
+        Serial.print(", ");
+        Serial.print(cur_speed);
+        Serial.print(", ");
+        Serial.print(dis_now);
+        Serial.print(", ");
+        Serial.print(t_now);
+        Serial.print(", ");
+        */
+
+        Serial.print(round (Distance));
         Serial.print(", ");
         Serial.println(round (Load*9.8));
         loopcount ++;
         break;
   }
+ 
 
   
 //
@@ -267,7 +333,7 @@ void PID_Control(){
     last_error = error;
     total_error = error*dt + total_error;
   }
-  control_signal = pid_p + pid_d + pid_i + 100;
+  control_signal = pid_p + pid_d + pid_i + 10;
   
   if (control_signal > max_control){
     control_signal = max_control;
