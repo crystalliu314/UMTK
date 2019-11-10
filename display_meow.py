@@ -23,7 +23,6 @@ XLABEL = "Time (s)"
 # prompt for recording time - currently infinite
 # adjust time window
 # fname
-        
 class Display(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
@@ -33,12 +32,11 @@ class Display(Frame):
 
         self.init_vars()
         self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-
-        self.set_zero_time()
-        self.t_start = self.zero_time
         
         self.init_plot(master)
         self.create_interface(master)
+
+        self.stop_recording = True
         
     def init_vars(self):
         self.cols = 0
@@ -76,13 +74,22 @@ class Display(Frame):
         
         self.start = Button(self, fg = self.button_fg, bg = self.button_bg)
         self.start["text"] = "START REC"
-        self.start["command"] = self.update_plot
+        self.start["command"] = self.start_button
         self.start.grid(row = self.toolbar_row + 2, column = self.toolbar_col)
 
         self.stop = Button(self, fg = self.button_fg, bg = self.button_bg)
         self.stop["text"] = "STOP REC"
+        self.stop["command"] = self.stop_button
         self.stop.grid(row = self.toolbar_row + 3, column = self.toolbar_col)
+        
+    def stop_button(self):
+        self.stop_recording = True
+        print("Recording is currently stopped")
 
+    def start_button(self):
+        if self.stop_recording:
+            self.set_zero_time()
+            self.stop_recording = False
 
     def bye(self):
         self.bye_bye = Toplevel(self)
@@ -103,7 +110,12 @@ class Display(Frame):
                     
     def read_data():
         pass
-    
+
+    def set_zero_time(self):
+        self.zero_time = int(floor(time()))
+        self.t_start = self.zero_time
+        self.t_end = self.zero_time
+        
     def init_time_params(self, t_refresh, t_window, duration=-1):
         self.t_refresh = t_refresh
         self.t_window = t_window
@@ -120,27 +132,27 @@ class Display(Frame):
         self.graph.draw()
         
         self.graph.get_tk_widget().grid(row = self.display_row, column = self.display_col)
-           
-    def update_plot(self):
-        del_t = self.t_end - self.zero_time
             
-        if del_t >= self.t_window:
-            self.t_start += self.t_refresh
-    
-        t = np.arange(self.t_start - self.zero_time, self.t_end - self.zero_time, self.t_refresh)
+    def update_plot(self):
+        if not self.stop_recording:
 
-        self.ax.cla()
-        self.ax.plot(t, np.sin(3*t))
-        self.ax.set_xlabel(XLABEL)
-        self.ax.set_ylabel(YLABEL)
-        self.graph.draw()
-
-        self.t_end += self.t_refresh
-        self.after(int(self.t_refresh * S_TO_MS), self.update_plot)
+            del_t = self.t_end - self.zero_time
+                
+            if del_t >= self.t_window:
+                self.t_start += self.t_refresh
         
-    def set_zero_time(self):
-        self.zero_time = int(floor(time()))
-        self.t_end = self.zero_time
+            t = np.arange(self.t_start - self.zero_time, self.t_end - self.zero_time, self.t_refresh)
+
+            self.ax.cla()
+            self.ax.plot(t, np.sin(3*t))
+            self.ax.set_xlabel(XLABEL)
+            self.ax.set_ylabel(YLABEL)
+            self.graph.draw()
+
+            self.t_end += self.t_refresh
+
+        self.after(int(self.t_refresh * S_TO_MS), self.update_plot)
+
         
 
 if __name__ == "__main__":
@@ -148,6 +160,7 @@ if __name__ == "__main__":
     # root.attributes('-fullscreen', True) # kill me, so scary
     # get window size
     display = Display(root)
+    display.update_plot()
     display.mainloop()
     root.destroy()
 
