@@ -13,6 +13,8 @@ from time import time
 import serial
 from math import floor
 
+APPLICATION_NAME = "Meow :3"
+
 S_TO_MS = 1000
 REFRESH_RATE = 0.05
 TIME_WINDOW = 10
@@ -26,7 +28,7 @@ class Display(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
         self.master = master
-        self.master.title("Meow")
+        self.master.title(APPLICATION_NAME)
         self.grid()
 
         self.init_vars()
