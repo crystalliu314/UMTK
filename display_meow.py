@@ -20,8 +20,9 @@ class Display(Frame):
         self.grid()
 
         self.init_vars()
+        self.init_plot(master)
         self.create_interface(master)
-        self.init_time_params(0.5, 60, 70)
+        self.init_time_params(0.1, 60, 70)
         
         self.set_zero_time()
         self.t_start = self.zero_time
@@ -71,24 +72,26 @@ class Display(Frame):
         self.graph.get_tk_widget().grid(row = self.display_row, column = self.display_col)
            
     def update_plot(self):
-        del_t = self.t_start - self.zero_time
+        print(self.t_start)
+        print(self.t_end)
+        del_t = self.t_end - self.zero_time
             
-        if del_t < self.t_window:
-            self.t_end = self.t_start + self.t_refresh
-        else:
-            self.t_end = self.t_start + self.t_window
+        if del_t >= self.t_window:
+            self.t_start += self.t_refresh
+            
         
         t = np.arange(self.t_start, self.t_end, self.t_refresh)
+        print(np.sin(t))
         # self.line.set_data(t, np.sin(t))
-        
-        self.ax.plot(t, np.sin(t))
+        #self.ax = self.fig.add_subplot(1, 1, 1)
 
+        self.ax.plot(t, np.sin(t))
         self.graph.draw()
-        self.t_start += self.t_refresh
+        
+        self.t_end += self.t_refresh
         
         self.after(int(self.t_refresh * S_TO_MS), self.update_plot)
         
-
     def set_zero_time(self):
         self.zero_time = int(floor(time()))
         self.t_end = self.zero_time
