@@ -32,12 +32,13 @@ class Display(Frame):
         self.grid()
 
         self.init_vars()
-        self.init_plot(master)
-        self.create_interface(master)
         self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-        
+
         self.set_zero_time()
         self.t_start = self.zero_time
+        
+        self.init_plot(master)
+        self.create_interface(master)
         
     def init_vars(self):
         self.cols = 0
@@ -57,19 +58,16 @@ class Display(Frame):
         self.button_fg = 'blue'
         self.button_bg = 'grey'
 
-        
     def create_interface(self, master):
         self.init_plot(master)
 
         # ---- USER INPUT ----
-        self.fname_label = Label(text = "Save data in: ")
-        self.fname_label.grid(row = self.user_in_row, column = self.user_in_col + 1)
+        #self.fname_label = Label(text = "Save data in: ")
+        #self.fname_label.grid(row = self.user_in_row, column = self.user_in_col + 1)
         
-        self.save_data = Entry()
-        self.save_data.grid(row = self.user_in_row)
-        
-
-        
+        #self.save_data = Entry()
+        #self.save_data.grid(row = self.user_in_row)
+                
         # ----- TOOLBAR ----
         self.QUIT = Button(self, bg = "red")
         self.QUIT["text"] = "QUIT"
@@ -78,6 +76,7 @@ class Display(Frame):
         
         self.start = Button(self, fg = self.button_fg, bg = self.button_bg)
         self.start["text"] = "START REC"
+        self.start["command"] = self.update_plot
         self.start.grid(row = self.toolbar_row + 2, column = self.toolbar_col)
 
         self.stop = Button(self, fg = self.button_fg, bg = self.button_bg)
@@ -149,7 +148,6 @@ if __name__ == "__main__":
     # root.attributes('-fullscreen', True) # kill me, so scary
     # get window size
     display = Display(root)
-    display.update_plot()
     display.mainloop()
     root.destroy()
 
