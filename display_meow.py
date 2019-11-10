@@ -82,8 +82,7 @@ class Display(Frame):
         
         t = np.arange(self.t_start, self.t_end, self.t_refresh)
         print(np.sin(t))
-        # self.line.set_data(t, np.sin(t))
-        #self.ax = self.fig.add_subplot(1, 1, 1)
+        self.ax.cla()
 
         self.ax.plot(t, np.sin(t))
         self.graph.draw()
