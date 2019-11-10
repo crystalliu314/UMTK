@@ -20,9 +20,14 @@ REFRESH_RATE = 0.05
 TIME_WINDOW = 10
 YLABEL = "Force (N)" #config file?
 XLABEL = "Time (s)"
+
+
+
+
 # prompt for recording time - currently infinite
 # adjust time window
 # fname
+
 class Display(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
@@ -31,30 +36,23 @@ class Display(Frame):
         self.grid()
 
         self.init_vars()
-        self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-        
         self.init_plot(master)
+        
         self.create_interface(master)
-
-        self.stop_recording = True
         
     def init_vars(self):
-        self.cols = 0
-        
-        self.user_in_col = 0
-        self.user_in_row = 0
-        self.cols += 1
-        
-        self.toolbar_col = 1
-        self.toolbar_row = 1
-        self.cols += 1
-        
-        self.display_col = 2
-        self.display_row = 1
-        self.cols += 1
+        self.toolbar_col = 0
+        self.toolbar_row = 0
 
-        self.button_fg = 'blue'
-        self.button_bg = 'grey'
+        self.display_col = 2
+        self.display_row = 0
+        
+        self.init_button_format(14, 'blue', 'green', 'red', 10, 10)
+        self.init_time_params(REFRESH_RATE, TIME_WINDOW)
+        
+        
+        # self.set_zero_time()
+        self.stop_recording = True # can have it auto record
 
     def create_interface(self, master):
         self.init_plot(master)
@@ -67,19 +65,16 @@ class Display(Frame):
         #self.save_data.grid(row = self.user_in_row)
                 
         # ----- TOOLBAR ----
-        self.QUIT = Button(self, bg = "red")
-        self.QUIT["text"] = "QUIT"
-        self.QUIT["command"] = self.bye
+        self.QUIT = Button(self, text = "QUIT", command = self.bye)
+        self.format_button(self.QUIT)
         self.QUIT.grid(row = self.toolbar_row + 1, column = self.toolbar_col)
         
-        self.start = Button(self, fg = self.button_fg, bg = self.button_bg)
-        self.start["text"] = "START REC"
-        self.start["command"] = self.start_button
+        self.start = Button(self, text = "START REC", command = self.start_button)
+        self.format_button(self.start)
         self.start.grid(row = self.toolbar_row + 2, column = self.toolbar_col)
-
-        self.stop = Button(self, fg = self.button_fg, bg = self.button_bg)
-        self.stop["text"] = "STOP REC"
-        self.stop["command"] = self.stop_button
+        
+        self.stop = Button(self, text = "STOP REC", command = self.stop_button)
+        self.format_button(self.stop)
         self.stop.grid(row = self.toolbar_row + 3, column = self.toolbar_col)
         
     def stop_button(self):
@@ -108,9 +103,6 @@ class Display(Frame):
     def not_ok(self):
         self.bye_bye.destroy()
                     
-    def read_data():
-        pass
-
     def set_zero_time(self):
         self.zero_time = int(floor(time()))
         self.t_start = self.zero_time
@@ -135,9 +127,7 @@ class Display(Frame):
             
     def update_plot(self):
         if not self.stop_recording:
-
-            del_t = self.t_end - self.zero_time
-                
+            del_t = self.t_end - self.zero_time 
             if del_t >= self.t_window:
                 self.t_start += self.t_refresh
         
@@ -151,10 +141,22 @@ class Display(Frame):
 
             self.t_end += self.t_refresh
 
-        self.after(int(self.t_refresh * S_TO_MS), self.update_plot)
+        self.after(int(self.t_refresh * S_TO_MS), self.update_plot)    
 
+    def init_button_format(self, button_text_size, button_bg, button_fg, button_active_bg, button_height, button_width):
+        button_font = button_text_size
         
+        self.button_attrib_names = ('font', 'bg', 'fg', 'activebackground', 'height', 'width')
+        self.button_attrib_vals = (button_font, button_bg, button_fg, button_active_bg, button_height, button_width)
 
+    def format_button(self, button):
+        for i in range(len(self.button_attrib_names)):
+            button[self.button_attrib_names[i]] = self.button_attrib_vals[i]
+
+    def read_data():
+        pass
+
+    
 if __name__ == "__main__":
     root = Tk()
     # root.attributes('-fullscreen', True) # kill me, so scary
