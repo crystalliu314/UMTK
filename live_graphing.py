@@ -52,7 +52,7 @@ def main():
 
     fileString = raw_input('Enter name of data file: ') #Get user to input desired nme of the file to save data to
 
-    print "Press button to start recording data."
+    #print "Press button to start recording data."
     #---SETUP---
 
     #---LOOP---
