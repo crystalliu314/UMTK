@@ -20,14 +20,13 @@ YLABEL = "Force (N)" #config file?
 XLABEL = "Time (s)"
 # prompt for recording time - currently infinite
 # adjust time window
-
-
-        
+# fname
         
 class Display(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
         self.master = master
+        self.master.title("Meow")
         self.grid()
 
         self.init_vars()
@@ -39,31 +38,50 @@ class Display(Frame):
         self.t_start = self.zero_time
         
     def init_vars(self):
-        self.toolbar_col = 0
-        self.toolbar_row = 0
+        self.cols = 0
         
-        self.display_col = 1
-        self.display_row = 0
+        self.user_in_col = 0
+        self.user_in_row = 0
+        self.cols += 1
+        
+        self.toolbar_col = 1
+        self.toolbar_row = 1
+        self.cols += 1
+        
+        self.display_col = 2
+        self.display_row = 1
+        self.cols += 1
 
         self.button_fg = 'blue'
         self.button_bg = 'grey'
+
         
     def create_interface(self, master):
         self.init_plot(master)
+
+        # ---- USER INPUT ----
+        self.fname_label = Label(text = "Save data in: ")
+        self.fname_label.grid(row = self.user_in_row, column = self.user_in_col + 1)
         
+        self.save_data = Entry()
+        self.save_data.grid(row = self.user_in_row)
+        
+
+        
+        # ----- TOOLBAR ----
         self.QUIT = Button(self, bg = "red")
         self.QUIT["text"] = "QUIT"
-        # self.QUIT["command"] =  self.quit
         self.QUIT["command"] = self.bye
-        self.QUIT.grid(row = self.toolbar_row, column = self.toolbar_col, sticky = N)
+        self.QUIT.grid(row = self.toolbar_row + 1, column = self.toolbar_col)
         
         self.start = Button(self, fg = self.button_fg, bg = self.button_bg)
         self.start["text"] = "START REC"
-        self.start.grid(row = self.toolbar_row + 1, column = self.toolbar_col, sticky = N)
+        self.start.grid(row = self.toolbar_row + 2, column = self.toolbar_col)
 
         self.stop = Button(self, fg = self.button_fg, bg = self.button_bg)
         self.stop["text"] = "STOP REC"
-        self.stop.grid(row = self.toolbar_row + 2, column = self.toolbar_col, sticky = N)
+        self.stop.grid(row = self.toolbar_row + 3, column = self.toolbar_col)
+
 
     def bye(self):
         self.bye_bye = Toplevel(self)
