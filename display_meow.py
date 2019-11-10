@@ -16,6 +16,8 @@ from math import floor
 S_TO_MS = 1000
 REFRESH_RATE = 0.05
 TIME_WINDOW = 10
+YLABEL = "Force (N)" #config file?
+XLABEL = "Time (s)"
 # prompt for recording time - currently infinite
 # adjust time window
 
@@ -86,6 +88,8 @@ class Display(Frame):
         self.fig = Figure()
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.ax.plot([],[])
+        self.ax.set_xlabel(XLABEL)
+        self.ax.set_ylabel(YLABEL)
 
         self.graph = FigureCanvasTkAgg(self.fig, master=root)
         self.graph.draw()
@@ -105,8 +109,11 @@ class Display(Frame):
         self.ax.cla()
 
         self.ax.plot(t, np.sin(3*t))
-        self.graph.draw()
+        self.ax.set_xlabel(XLABEL)
+        self.ax.set_ylabel(YLABEL)
         
+        self.graph.draw()
+
         self.t_end += self.t_refresh
         self.after(int(self.t_refresh * S_TO_MS), self.update_plot)
         
