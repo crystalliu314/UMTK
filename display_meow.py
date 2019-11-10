@@ -13,6 +13,7 @@ from time import time
 import serial
 from math import floor
 
+
 APPLICATION_NAME = "Meow :3"
 
 S_TO_MS = 1000
@@ -34,49 +35,49 @@ class Display(Frame):
         self.master = master
         self.master.title(APPLICATION_NAME)
         self.grid()
-
-        self.init_vars()
-        self.init_plot(master)
-        
-        self.create_interface(master)
-        
-    def init_vars(self):
-        self.toolbar_col = 0
-        self.toolbar_row = 0
-
-        self.display_col = 2
-        self.display_row = 0
-        
-        self.init_button_format(14, 'blue', 'green', 'red', 10, 10)
         self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-        
-        
+
         # self.set_zero_time()
         self.stop_recording = True # can have it auto record
 
-    def create_interface(self, master):
         self.init_plot(master)
+        self.create_interface(master)
 
-        # ---- USER INPUT ----
-        #self.fname_label = Label(text = "Save data in: ")
-        #self.fname_label.grid(row = self.user_in_row, column = self.user_in_col + 1)
+    def create_interface(self, master):
+        self.graph_title = Label(self, text = "UMTK DEMO: TITLE HERE", font = ('Helvetica', 20, 'normal'))
         
-        #self.save_data = Entry()
-        #self.save_data.grid(row = self.user_in_row)
-                
         # ----- TOOLBAR ----
-        self.QUIT = Button(self, text = "QUIT", command = self.bye)
-        self.format_button(self.QUIT)
-        self.QUIT.grid(row = self.toolbar_row + 1, column = self.toolbar_col)
+        
         
         self.start = Button(self, text = "START REC", command = self.start_button)
-        self.format_button(self.start)
-        self.start.grid(row = self.toolbar_row + 2, column = self.toolbar_col)
-        
         self.stop = Button(self, text = "STOP REC", command = self.stop_button)
-        self.format_button(self.stop)
-        self.stop.grid(row = self.toolbar_row + 3, column = self.toolbar_col)
+        self.QUIT = Button(self, text = "QUIT", command = self.bye)
         
+        self.layout()
+        self.init_plot(master)
+        
+    def layout(self):
+        self.graph_title.grid(row = 0, column = 1, pady = 20, sticky = "N")
+        
+        self.toolbar_width = 15
+        
+        self.toolbar_col = 0
+        self.toolbar_row = 0
+        self.display_col = 1
+        self.display_row = 0
+        
+        self.init_button_format(14, 'SteelBlue3', 'linen', 'SteelBlue4', 10, self.toolbar_width)
+        QUIT_attribs = (('Helvetica', 14, 'bold'), 'firebrick3', 'linen', 'firebrick4', 3, self.toolbar_width)
+
+        self.format_button(self.start, self.button_attrib_vals)
+        self.format_button(self.stop, self.button_attrib_vals)
+        self.format_button(self.QUIT, QUIT_attribs)
+        
+        toolbar_padding = 4
+        self.start.grid(row = self.toolbar_row, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
+        self.stop.grid(row = self.toolbar_row + 1, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
+        self.QUIT.grid(row = self.toolbar_row + 2, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
+
     def stop_button(self):
         self.stop_recording = True
         print("Recording is currently stopped")
@@ -122,8 +123,6 @@ class Display(Frame):
 
         self.graph = FigureCanvasTkAgg(self.fig, master=root)
         self.graph.draw()
-        
-        self.graph.get_tk_widget().grid(row = self.display_row, column = self.display_col)
             
     def update_plot(self):
         if not self.stop_recording:
@@ -140,18 +139,19 @@ class Display(Frame):
             self.graph.draw()
 
             self.t_end += self.t_refresh
-
+            
+        self.graph.get_tk_widget().grid(row = self.display_row, column = self.display_col, sticky = "W")
         self.after(int(self.t_refresh * S_TO_MS), self.update_plot)    
 
-    def init_button_format(self, button_text_size, button_bg, button_fg, button_active_bg, button_height, button_width):
-        button_font = button_text_size
+    def init_button_format(self, button_text_size, button_bg, button_fg, button_active_bg, button_height, button_width, bd=1):
+        button_font = ('Helvetica', button_text_size, 'bold')
         
-        self.button_attrib_names = ('font', 'bg', 'fg', 'activebackground', 'height', 'width')
-        self.button_attrib_vals = (button_font, button_bg, button_fg, button_active_bg, button_height, button_width)
+        self.button_attrib_names = ('font', 'bg', 'fg', 'activebackground', 'height', 'width', 'bd')
+        self.button_attrib_vals = (button_font, button_bg, button_fg, button_active_bg, button_height, button_width, bd)
 
-    def format_button(self, button):
-        for i in range(len(self.button_attrib_names)):
-            button[self.button_attrib_names[i]] = self.button_attrib_vals[i]
+    def format_button(self, button, attribs):
+        for i in range(len(attribs)):
+            button[self.button_attrib_names[i]] = attribs[i]
 
     def read_data():
         pass
@@ -159,8 +159,9 @@ class Display(Frame):
     
 if __name__ == "__main__":
     root = Tk()
+    root.tk.call('wm', 'iconphoto', root._w, PhotoImage(file='./icon.gif'))
     # root.attributes('-fullscreen', True) # kill me, so scary
-    # get window size
+    # get window size ?
     display = Display(root)
     display.update_plot()
     display.mainloop()
