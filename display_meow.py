@@ -28,43 +28,26 @@ XLABEL = "Time (s)"
 # prompt for recording time - currently infinite
 # adjust time window
 # fname
+global stop_recording
+stop_recording = False
 
-class Display(Frame):
+class Toolbar(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
         self.master = master
-        self.master.title(APPLICATION_NAME)
-        self.grid()
-        self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-
-        # self.set_zero_time()
-        self.stop_recording = True # can have it auto record
-
-        self.init_plot(master)
-        self.create_interface(master)
-
-    def create_interface(self, master):
-        self.graph_title = Label(self, text = "UMTK DEMO: TITLE HERE", font = ('Helvetica', 20, 'normal'))
+        self.pack(side = LEFT)
         
-        # ----- TOOLBAR ----
-        
-        
+        self.create_widgets(master)
+        self.layout()
+
+    def create_widgets(self, master):
         self.start = Button(self, text = "START REC", command = self.start_button)
         self.stop = Button(self, text = "STOP REC", command = self.stop_button)
         self.QUIT = Button(self, text = "QUIT", command = self.bye)
         
-        self.layout()
-        self.init_plot(master)
-        
     def layout(self):
-        self.graph_title.grid(row = 0, column = 1, pady = 20, sticky = "N")
-        
         self.toolbar_width = 15
-        
         self.toolbar_col = 0
-        self.toolbar_row = 0
-        self.display_col = 1
-        self.display_row = 0
         
         self.init_button_format(14, 'SteelBlue3', 'linen', 'SteelBlue4', 10, self.toolbar_width)
         QUIT_attribs = (('Helvetica', 14, 'bold'), 'firebrick3', 'linen', 'firebrick4', 3, self.toolbar_width)
@@ -73,19 +56,19 @@ class Display(Frame):
         self.format_button(self.stop, self.button_attrib_vals)
         self.format_button(self.QUIT, QUIT_attribs)
         
-        toolbar_padding = 4
-        self.start.grid(row = self.toolbar_row, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
-        self.stop.grid(row = self.toolbar_row + 1, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
-        self.QUIT.grid(row = self.toolbar_row + 2, column = self.toolbar_col, padx = toolbar_padding, pady = toolbar_padding)
-
+        self.start.pack(side = TOP)
+        self.stop.pack(side = TOP)
+        self.QUIT.pack(side = TOP)
+        
     def stop_button(self):
-        self.stop_recording = True
+        global stop_recording
+        stop_recording = True
         print("Recording is currently stopped")
 
     def start_button(self):
-        if self.stop_recording:
-            self.set_zero_time()
-            self.stop_recording = False
+        global stop_recording
+        if stop_recording:
+            stop_recording = False
 
     def bye(self):
         self.bye_bye = Toplevel(self)
@@ -103,7 +86,34 @@ class Display(Frame):
         self.quit()
     def not_ok(self):
         self.bye_bye.destroy()
-                    
+        
+    def init_button_format(self, button_text_size, button_bg, button_fg, button_active_bg, button_height, button_width, bd=1):
+        button_font = ('Helvetica', button_text_size, 'bold')
+        
+        self.button_attrib_names = ('font', 'bg', 'fg', 'activebackground', 'height', 'width', 'bd')
+        self.button_attrib_vals = (button_font, button_bg, button_fg, button_active_bg, button_height, button_width, bd)
+
+    def format_button(self, button, attribs):
+        for i in range(len(attribs)):
+            button[self.button_attrib_names[i]] = attribs[i]
+
+class Display(Frame):
+    def __init__(self, master):
+        global stop_recording
+        
+        Frame.__init__(self, master)
+        self.master = master
+        self.master.title(APPLICATION_NAME)
+        self.pack()
+        
+        self.init_time_params(REFRESH_RATE, TIME_WINDOW)
+        # self.set_zero_time()
+        stop_recording = True # can have it auto record
+        self.init_plot(master)
+
+        self.graph_title = Label(self, text = "UMTK DEMO: TITLE HERE", font = ('Helvetica', 20, 'normal'))
+        self.graph_title.pack(side = TOP)
+
     def set_zero_time(self):
         self.zero_time = int(floor(time()))
         self.t_start = self.zero_time
@@ -115,7 +125,7 @@ class Display(Frame):
         self.duration = duration
 
     def init_plot(self, master):
-        self.fig = Figure()
+        self.fig = Figure(figsize = (7.0, 5.0))
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.ax.plot([],[])
         self.ax.set_xlabel(XLABEL)
@@ -123,9 +133,10 @@ class Display(Frame):
 
         self.graph = FigureCanvasTkAgg(self.fig, master=root)
         self.graph.draw()
-            
+      
     def update_plot(self):
-        if not self.stop_recording:
+        global stop_recording
+        if not stop_recording:
             del_t = self.t_end - self.zero_time 
             if del_t >= self.t_window:
                 self.t_start += self.t_refresh
@@ -139,20 +150,12 @@ class Display(Frame):
             self.graph.draw()
 
             self.t_end += self.t_refresh
+        else:
+            self.set_zero_time()
             
-        self.graph.get_tk_widget().grid(row = self.display_row, column = self.display_col, sticky = "W")
+        self.graph.get_tk_widget().pack(side = TOP)
         self.after(int(self.t_refresh * S_TO_MS), self.update_plot)    
-
-    def init_button_format(self, button_text_size, button_bg, button_fg, button_active_bg, button_height, button_width, bd=1):
-        button_font = ('Helvetica', button_text_size, 'bold')
         
-        self.button_attrib_names = ('font', 'bg', 'fg', 'activebackground', 'height', 'width', 'bd')
-        self.button_attrib_vals = (button_font, button_bg, button_fg, button_active_bg, button_height, button_width, bd)
-
-    def format_button(self, button, attribs):
-        for i in range(len(attribs)):
-            button[self.button_attrib_names[i]] = attribs[i]
-
     def read_data():
         pass
 
@@ -163,6 +166,8 @@ if __name__ == "__main__":
     # root.attributes('-fullscreen', True) # kill me, so scary
     # get window size ?
     display = Display(root)
+    toolbar = Toolbar(root)
+    
     display.update_plot()
     display.mainloop()
     root.destroy()
