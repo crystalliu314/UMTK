@@ -19,17 +19,37 @@ TITLE_STR = "UTMTK MEOW"
 
 S_TO_MS = 1000
 
+DATA_FNAME = "test.txt"
 REFRESH_RATE = 0.05
 SAMPLE_RATE = 100 #Hz
 YLABEL = "Stress (MPa)" #config file?
 XLABEL = "Strain"
 
-
+XVAL = "STRAIN"
+YVAL = "STRESS"
+DELIM = ","
 # prompt for recording time - currently infinite
 # adjust time window
 # fname
-global stop_recording
+global stop_recording, f
 stop_recording = False
+f = open(DATA_FNAME, 'r')
+
+
+def get_buffer_size(samp_rate, refresh_rate):
+    return (samp_rate * refresh_rate)
+
+def get_next_values(buffer_size):
+    i = 0
+    values_1 = [0] * buffer_size
+    values_2 = [0] * buffer_size
+    l = f.readline()
+    while i < buffer_size and l != "":
+        values_1[i], values_2[i] = l.split(DELIM)
+        l = f.readline()
+        i += 1
+
+    return np.array(values1), np.array(values2)
 
 class Toolbar(Frame):
     def __init__(self, master):
@@ -107,8 +127,8 @@ class Display(Frame):
         self.pack()
         
         self.t_refresh = REFRESH_RATE
-        self.set_time()
-        stop_recording = False # can have it auto record
+        # self.set_time()
+        stop_recording = True # can have it auto record
         self.init_plot(master)
 
         self.graph_title = Label(self, text = TITLE_STR, font = ('Helvetica', 20, 'normal'))
@@ -130,8 +150,9 @@ class Display(Frame):
       
     def update_plot(self):
         global stop_recording
-        if not stop_recording:       
-            t = np.arange(0, self.t_end - self.zero_time, self.t_refresh)
+        if not stop_recording:
+            buffer_size = get_buffer_size(SAMPLE_RATE, REFRESH_RATE)
+            x, y = get_next_values(buffer_size)
 
             self.ax.cla()
             self.ax.plot(t, np.sin(3*t))
@@ -162,3 +183,4 @@ if __name__ == "__main__":
     display.mainloop()
     root.destroy()
 
+    f.close()
