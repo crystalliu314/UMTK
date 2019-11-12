@@ -10,19 +10,19 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 
 from time import time
-import serial
+# import serial
 from math import floor
 
 
 APPLICATION_NAME = "Meow :3"
+TITLE_STR = "UTMTK MEOW"
 
 S_TO_MS = 1000
+
 REFRESH_RATE = 0.05
-TIME_WINDOW = 10
-YLABEL = "Force (N)" #config file?
-XLABEL = "Time (s)"
-
-
+SAMPLE_RATE = 100 #Hz
+YLABEL = "Stress (MPa)" #config file?
+XLABEL = "Strain"
 
 
 # prompt for recording time - currently infinite
@@ -106,24 +106,18 @@ class Display(Frame):
         self.master.title(APPLICATION_NAME)
         self.pack()
         
-        self.init_time_params(REFRESH_RATE, TIME_WINDOW)
-        # self.set_zero_time()
-        stop_recording = True # can have it auto record
+        self.t_refresh = REFRESH_RATE
+        self.set_time()
+        stop_recording = False # can have it auto record
         self.init_plot(master)
 
-        self.graph_title = Label(self, text = "UMTK DEMO: TITLE HERE", font = ('Helvetica', 20, 'normal'))
+        self.graph_title = Label(self, text = TITLE_STR, font = ('Helvetica', 20, 'normal'))
         self.graph_title.pack(side = TOP)
 
-    def set_zero_time(self):
+    def set_time(self):
         self.zero_time = int(floor(time()))
-        self.t_start = self.zero_time
         self.t_end = self.zero_time
         
-    def init_time_params(self, t_refresh, t_window, duration=-1):
-        self.t_refresh = t_refresh
-        self.t_window = t_window
-        self.duration = duration
-
     def init_plot(self, master):
         self.fig = Figure(figsize = (7.0, 5.0))
         self.ax = self.fig.add_subplot(1, 1, 1)
@@ -136,12 +130,8 @@ class Display(Frame):
       
     def update_plot(self):
         global stop_recording
-        if not stop_recording:
-            del_t = self.t_end - self.zero_time 
-            if del_t >= self.t_window:
-                self.t_start += self.t_refresh
-        
-            t = np.arange(self.t_start - self.zero_time, self.t_end - self.zero_time, self.t_refresh)
+        if not stop_recording:       
+            t = np.arange(0, self.t_end - self.zero_time, self.t_refresh)
 
             self.ax.cla()
             self.ax.plot(t, np.sin(3*t))
@@ -151,7 +141,7 @@ class Display(Frame):
 
             self.t_end += self.t_refresh
         else:
-            self.set_zero_time()
+            self.set_time()
             
         self.graph.get_tk_widget().pack(side = TOP)
         self.after(int(self.t_refresh * S_TO_MS), self.update_plot)    
