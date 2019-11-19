@@ -58,7 +58,7 @@ enum sevseg {
 //                         SETUP
 //=============================================================================================
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -148,14 +148,14 @@ void loop() {
       
       if(digitalRead(SWITCH_START) == LOW){
         state = RECORDING;
-        Serial.print("BEGIN\n");
+        Serial.println("BEGIN\n");
       }
     break;
 
     case RECORDING:
       if(digitalRead(SWITCH_STOP) == LOW){
         state = STANDBY;
-        Serial.print("END\n");
+        Serial.println("END\n");
       }
     break;
   }
@@ -195,9 +195,10 @@ void loop() {
         sevenSeg::setInt( 1, abs ((int) round (Distance*10)), 1);
         sevenSeg::setInt( 2, abs ((int) round (Load*9.8)), 1);
         sevseg = DIG1;
-        Serial.print(round (Distance*10));
+        Serial.print(round(Distance*10));
         Serial.print(", ");
-        Serial.println(round (Load*9.8));
+        Serial.println(round(Load*9.8));
+        //Serial.println();
         loopcount ++;
         break;
   }

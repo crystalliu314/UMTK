@@ -13,11 +13,10 @@ from time import time
 import serial
 from math import floor
 
-
+BAUD_RATE = 9600
+PORT = "COM3"
 REFRESH_RATE = 0.05 # How often the graph refreshes, in seconds
 SAMPLE_RATE = 100 #Hz
-BAUD_RATE = 9600
-PORT = "COM1"
 
 YLABEL = "Stress (MPa)" #config file?
 XLABEL = "Strain"
@@ -124,7 +123,8 @@ class Display(Frame):
             self.ser.open()
         except:
             print("Cound not open specified serial port: {}".format(PORT))
-            print("Are you sure this is the right port?")
+            print("Is this the right port?")
+            print("If so, make sure your Arduino Serial window is closed")
         
     def set_time(self):
         self.zero_time = int(floor(time()))
@@ -148,14 +148,21 @@ class Display(Frame):
         global stop_recording
         if not stop_recording:
             try:
-                line = self.ser.readline()
-                x, y = line.split(DELIM)
-                x, y = float(x), float(y)
-
-                self.x_data = np.append(self.x_data, x)
-                self.y_data = np.append(self.y_data, y)
+                bytes_to_read = self.ser.inWaiting()
+                print(bytes_to_read)
+                lines = self.ser.read(bytes_to_read).decode().strip()
+                lines = lines.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if not line == '':
+                        x, y = line.split(DELIM)
+                        print(line)
+                        # need to create array + array 
+                        self.x_data = np.append(self.x_data, x)
+                        self.y_data = np.append(self.y_data, y)
             except:
-                stop_recording = True
+                print("There may be no data in the buffer")
+                #stop_recording = True
             
             self.ax.cla()
             self.ax.plot(self.x_data, self.y_data)
@@ -183,8 +190,8 @@ if __name__ == "__main__":
     # get window size ?
     display = Display(root)
     toolbar = Toolbar(root)
-    
     display.update_plot()
     display.mainloop()
+    display.ser.close()
     root.destroy()
 

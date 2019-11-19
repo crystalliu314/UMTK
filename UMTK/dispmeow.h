@@ -60,4 +60,3 @@ namespace sevenSeg{
   void refresh(byte digitNum);
   void setInt(byte dispNum, int number, int decPlaces);
 }
-
