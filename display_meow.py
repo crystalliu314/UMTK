@@ -10,46 +10,27 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 
 from time import time
-# import serial
+import serial
 from math import floor
 
 
-APPLICATION_NAME = "Meow :3"
-TITLE_STR = "UTMTK MEOW"
-
-S_TO_MS = 1000
-
-DATA_FNAME = "test.txt"
-REFRESH_RATE = 0.05
+REFRESH_RATE = 0.05 # How often the graph refreshes, in seconds
 SAMPLE_RATE = 100 #Hz
+BAUD_RATE = 9600
+PORT = "COM1"
+
 YLABEL = "Stress (MPa)" #config file?
 XLABEL = "Strain"
-
 XVAL = "STRAIN"
 YVAL = "STRESS"
 DELIM = ","
-# prompt for recording time - currently infinite
-# adjust time window
-# fname
-global stop_recording, f
+
+APPLICATION_NAME = "Meow :3"
+TITLE_STR = "UTMTK MEOW"
+S_TO_MS = 1000
+
+global stop_recording
 stop_recording = False
-f = open(DATA_FNAME, 'r')
-
-
-def get_buffer_size(samp_rate, refresh_rate):
-    return (samp_rate * refresh_rate)
-
-def get_next_values(buffer_size):
-    i = 0
-    values_1 = [0] * buffer_size
-    values_2 = [0] * buffer_size
-    l = f.readline()
-    while i < buffer_size and l != "":
-        values_1[i], values_2[i] = l.split(DELIM)
-        l = f.readline()
-        i += 1
-
-    return np.array(values1), np.array(values2)
 
 class Toolbar(Frame):
     def __init__(self, master):
@@ -133,7 +114,18 @@ class Display(Frame):
 
         self.graph_title = Label(self, text = TITLE_STR, font = ('Helvetica', 20, 'normal'))
         self.graph_title.pack(side = TOP)
-
+        self.make_serial()
+        
+    def make_serial(self):
+        self.ser = serial.Serial()
+        self.ser.baud_rate = BAUD_RATE
+        self.ser.port = PORT
+        try:
+            self.ser.open()
+        except:
+            print("Cound not open specified serial port: {}".format(PORT))
+            print("Are you sure this is the right port?")
+        
     def set_time(self):
         self.zero_time = int(floor(time()))
         self.t_end = self.zero_time
@@ -142,6 +134,10 @@ class Display(Frame):
         self.fig = Figure(figsize = (7.0, 5.0))
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.ax.plot([],[])
+
+        self.x_data = np.array([])
+        self.y_data = np.array([])
+        
         self.ax.set_xlabel(XLABEL)
         self.ax.set_ylabel(YLABEL)
 
@@ -151,11 +147,18 @@ class Display(Frame):
     def update_plot(self):
         global stop_recording
         if not stop_recording:
-            buffer_size = get_buffer_size(SAMPLE_RATE, REFRESH_RATE)
-            x, y = get_next_values(buffer_size)
+            try:
+                line = self.ser.readline()
+                x, y = line.split(DELIM)
+                x, y = float(x), float(y)
 
+                self.x_data = np.append(self.x_data, x)
+                self.y_data = np.append(self.y_data, y)
+            except:
+                stop_recording = True
+            
             self.ax.cla()
-            self.ax.plot(t, np.sin(3*t))
+            self.ax.plot(self.x_data, self.y_data)
             self.ax.set_xlabel(XLABEL)
             self.ax.set_ylabel(YLABEL)
             self.graph.draw()
@@ -172,6 +175,8 @@ class Display(Frame):
 
     
 if __name__ == "__main__":
+
+    
     root = Tk()
     root.tk.call('wm', 'iconphoto', root._w, PhotoImage(file='./icon.gif'))
     # root.attributes('-fullscreen', True) # kill me, so scary
@@ -183,4 +188,3 @@ if __name__ == "__main__":
     display.mainloop()
     root.destroy()
 
-    f.close()
