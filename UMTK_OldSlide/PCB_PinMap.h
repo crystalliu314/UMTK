@@ -1,8 +1,8 @@
 // Pin mapping for tensile cat PCB
 #pragma once
 
-#define SLIDE_DATA 4
-#define SLIDE_CLOCK 3
+#define SLIDE_DATA 3
+#define SLIDE_CLOCK 4
 
 #define LOADCELL_CLOCK 5
 #define LOADCELL_DATA 6

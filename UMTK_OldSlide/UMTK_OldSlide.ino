@@ -1,15 +1,9 @@
-//#include "slide.h"  
-#include "slideNew.h"
+#include "slide
+.h"  
 #include "PCB_PinMap.h"
 #include "HX711.h"
 #include "setup.h"
 #include "dispmeow.h"
-
-
-byte SLIDE_BIT_COUNT = 0; // Count number of bits read
-uint32_t SLIDE_DATA_BUFFER = 0; // Buffer To Shift Data Into
-int32_t SLIDE_VALID_DATA = 0; // Valid data stored here
-uint32_t SLIDE_LAST_BIT_TIME = 0; // Last time a bit was read, this handles start and if scale fall out of sync
 
 slide Slide(SLIDE_DATA, SLIDE_CLOCK);
 HX711 LoadCell(LOADCELL_DATA, LOADCELL_CLOCK);
@@ -66,7 +60,6 @@ enum sevseg {
 //=============================================================================================
 void setup() {
   Serial.begin(9600);
-  attachInterrupt(digitalPinToInterrupt(SLIDE_CLOCK), slideISR, FALLING);
   LoadCell.set_scale();
   LoadCell.tare(); //Reset the scale to 0
   Slide.set_scale();
@@ -81,7 +74,6 @@ void setup() {
   digitalWrite(DISP2_OE, LOW);
   state = STANDBY;
   sevseg = DIG_OFF;
-  
 
 }
  
@@ -89,7 +81,7 @@ void setup() {
 //                         LOOP
 //=============================================================================================
 void loop() {
-
+  
   LoadCell.set_scale(calibration_factor_load); //Adjust to this calibration factor
   Slide.set_scale(calibration_factor_displacement); //Adjust to this calibration factor
 
@@ -201,12 +193,12 @@ void loop() {
         Distance = Slide.get_units();
         loopcount = 0;
         };
-        sevenSeg::setInt( 1, abs ((int) round (Distance/1.096*10)), 1);
-        sevenSeg::setInt( 2, abs ((int) round (Load*98)), 1);
+        sevenSeg::setInt( 1, abs ((int) round (Distance*10)), 1);
+        sevenSeg::setInt( 2, abs ((int) round (Load*9.8)), 1);
         sevseg = DIG1;
-        Serial.print(Distance/1.096);
+        Serial.print(round(Distance*10));
         Serial.print(", ");
-        Serial.println(Load*9.8);
+        Serial.println(round(Load*9.8));
         //Serial.println();
         loopcount ++;
         break;
@@ -288,40 +280,3 @@ void PID_Control(){
   
 }
 //================================================================
-
-// SLIDE CODE FOR NEW SLIDE
-
-void slideISR() {
-  // Immidiately Latch Bit for data
-  bool this_bit = digitalRead(SLIDE_DATA);
-
-  // Check if this is first bit in series or one of many bits
-  uint32_t SLIDE_THIS_BIT_TIME = millis();
-  if (SLIDE_THIS_BIT_TIME - SLIDE_LAST_BIT_TIME > 100 ) {
-    // If a long time has passed this is the first bit
-    SLIDE_DATA_BUFFER = 0; // Clear buffer ready for more bits
-    SLIDE_BIT_COUNT = 0;
-  }
-  SLIDE_LAST_BIT_TIME = SLIDE_THIS_BIT_TIME;
-
-  if (SLIDE_BIT_COUNT <= 23) {  // Check if a read is in progress, if it is this is timing sensitive
-    SLIDE_BIT_COUNT ++; // Increment bit coutner
-    if (!this_bit) { // incoming bit is 0, our logic is inverted
-      SLIDE_DATA_BUFFER = SLIDE_DATA_BUFFER | 0x80000000; // Set LSB 
-    }
-    SLIDE_DATA_BUFFER = SLIDE_DATA_BUFFER >> 1; // Shift buffer by one bit
-    if (SLIDE_BIT_COUNT == 23) { // This is last bit, do casting stuff
-      SLIDE_DATA_BUFFER = SLIDE_DATA_BUFFER >> 8;
-      if (SLIDE_DATA_BUFFER & 0x00100000) { // Check negative bit
-        // negative
-        SLIDE_VALID_DATA = 0 - (int32_t) (0x000FFFFF & SLIDE_DATA_BUFFER);
-      } else {
-        // positive
-        SLIDE_VALID_DATA = (int32_t)(0x000FFFFF & SLIDE_DATA_BUFFER);
-      }
-      SLIDE_DATA_BUFFER = 0; // Clear buffer ready for more bits
-      SLIDE_BIT_COUNT = 0;
-     // Serial.println(round(SLIDE_VALID_DATA/6.5));
-    }
-  }
-}
